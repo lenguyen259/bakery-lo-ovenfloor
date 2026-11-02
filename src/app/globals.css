@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f3ecdf;
+  --ink: #1c1410;
+  --cocoa: #3b2416;
+  --caramel: #c47b3a;
+  --pandan: #2f6f5e;
+  --clay: #9b3a2f;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-cocoa: var(--cocoa);
+  --color-caramel: var(--caramel);
+  --color-pandan: var(--pandan);
+  --color-clay: var(--clay);
+  --font-sans: var(--font-be-vietnam);
+  --font-display: var(--font-fraunces);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-be-vietnam), system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+}

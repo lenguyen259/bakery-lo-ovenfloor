@@ -1,0 +1,242 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Outlet {
+  id       String @id
+  name     String
+  kind     String
+  district String
+
+  demandSignals    DemandSignal[]
+  finishedOnHand   FinishedOnHand[]
+  wasteEvents      WasteEvent[]
+
+  @@map("outlet")
+}
+
+model Sku {
+  id             String @id
+  nameEn         String @map("name_en")
+  nameVi         String @map("name_vi")
+  batchMultiple  Int    @map("batch_multiple")
+  baked          Boolean
+  active         Boolean @default(true)
+
+  recipe           Recipe?
+  demandSignals    DemandSignal[]
+  finishedOnHand   FinishedOnHand[]
+  yieldObservations YieldObservation[]
+  wasteEvents      WasteEvent[]
+  batchLines       BatchLine[]
+
+  @@map("sku")
+}
+
+model Ingredient {
+  id     String @id
+  nameEn String @map("name_en")
+  nameVi String @map("name_vi")
+  unit   String
+
+  onHand      IngredientOnHand?
+  recipeLines RecipeLine[]
+
+  @@map("ingredient")
+}
+
+model IngredientOnHand {
+  ingredientId String   @id @map("ingredient_id")
+  qty          Int
+  asOf         DateTime @map("as_of") @db.Timestamptz
+
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@map("ingredient_on_hand")
+}
+
+model Recipe {
+  id         String @id
+  skuId      String @unique @map("sku_id")
+  yieldUnits Int    @map("yield_units")
+
+  sku   Sku          @relation(fields: [skuId], references: [id])
+  lines RecipeLine[]
+
+  @@map("recipe")
+}
+
+model RecipeLine {
+  recipeId     String @map("recipe_id")
+  ingredientId String @map("ingredient_id")
+  qtyPerYield  Int    @map("qty_per_yield")
+
+  recipe     Recipe     @relation(fields: [recipeId], references: [id])
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@id([recipeId, ingredientId])
+  @@map("recipe_line")
+}
+
+model Oven {
+  id          String @id
+  name        String
+  decks       Int
+  bakesPerDay Int    @map("bakes_per_day")
+
+  @@map("oven")
+}
+
+model DemandSignal {
+  id         String   @id
+  outletId   String   @map("outlet_id")
+  skuId      String   @map("sku_id")
+  forDate    DateTime @map("for_date") @db.Date
+  qty        Int
+  source     String
+  capturedAt DateTime @map("captured_at") @db.Timestamptz
+
+  outlet Outlet @relation(fields: [outletId], references: [id])
+  sku    Sku    @relation(fields: [skuId], references: [id])
+
+  @@map("demand_signal")
+}
+
+model FinishedOnHand {
+  outletId String   @map("outlet_id")
+  skuId    String   @map("sku_id")
+  qty      Int
+  asOf     DateTime @map("as_of") @db.Date
+
+  outlet Outlet @relation(fields: [outletId], references: [id])
+  sku    Sku    @relation(fields: [skuId], references: [id])
+
+  @@id([outletId, skuId, asOf])
+  @@map("finished_on_hand")
+}
+
+model YieldObservation {
+  skuId       String   @map("sku_id")
+  eventDate   DateTime @map("event_date") @db.Date
+  producedQty Int      @map("produced_qty")
+  wasteQty    Int      @map("waste_qty")
+
+  sku Sku @relation(fields: [skuId], references: [id])
+
+  @@id([skuId, eventDate])
+  @@map("yield_observation")
+}
+
+model WasteEvent {
+  id         String   @id
+  outletId   String   @map("outlet_id")
+  skuId      String   @map("sku_id")
+  eventDate  DateTime @map("event_date") @db.Date
+  qty        Int
+  reason     String
+  note       String?
+  recordedBy String   @map("recorded_by")
+
+  outlet Outlet @relation(fields: [outletId], references: [id])
+  sku    Sku    @relation(fields: [skuId], references: [id])
+
+  @@map("waste_event")
+}
+
+model BatchPlan {
+  id           String   @id
+  forDate      DateTime @map("for_date") @db.Date
+  status       String
+  mode         String
+  narrativeEn  String?  @map("narrative_en")
+  narrativeVi  String?  @map("narrative_vi")
+  failureFlags String[] @map("failure_flags")
+  createdBy    String   @map("created_by")
+  releasedBy   String?  @map("released_by")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  lines BatchLine[]
+
+  @@map("batch_plan")
+}
+
+model BatchLine {
+  id               String   @id
+  planId           String   @map("plan_id")
+  skuId            String   @map("sku_id")
+  demandQty        Int      @map("demand_qty")
+  excludedStaleQty Int      @default(0) @map("excluded_stale_qty")
+  leftoverQty      Int      @map("leftover_qty")
+  wasteBufferQty   Int      @map("waste_buffer_qty")
+  plannedQty       Int      @map("planned_qty")
+  slots            Int
+  constrainedBy    String?  @map("constrained_by")
+  flags            String[]
+
+  plan BatchPlan @relation(fields: [planId], references: [id])
+  sku  Sku       @relation(fields: [skuId], references: [id])
+
+  @@map("batch_line")
+}
+
+model ProcessStep {
+  id         String @id
+  stream     String
+  sortOrder  Int    @map("sort_order")
+  nameEn     String @map("name_en")
+  nameVi     String @map("name_vi")
+  ownerRole  String @map("owner_role")
+  inputEn    String @map("input_en")
+  outputEn   String @map("output_en")
+  systemName String @map("system_name")
+  painEn     String @map("pain_en")
+  painVi     String @map("pain_vi")
+
+  requirements Requirement[]
+
+  @@map("process_step")
+}
+
+model Requirement {
+  id           String @id
+  stepId       String @map("step_id")
+  statementEn  String @map("statement_en")
+  statementVi  String @map("statement_vi")
+  priority     String
+  acceptanceEn String @map("acceptance_en")
+
+  step ProcessStep @relation(fields: [stepId], references: [id])
+
+  @@map("requirement")
+}
+
+model AgentRun {
+  id           String   @id
+  kind         String
+  mode         String
+  question     String?
+  inputJson    Json     @map("input_json")
+  outputJson   Json     @map("output_json")
+  failureFlags String[] @map("failure_flags")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("agent_run")
+}
+
+model AuditEvent {
+  id       String   @id
+  at       DateTime @default(now()) @db.Timestamptz
+  actor    String
+  action   String
+  entity   String
+  entityId String   @map("entity_id")
+  detail   Json
+
+  @@map("audit_event")
+}
