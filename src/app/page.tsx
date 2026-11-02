@@ -8,28 +8,34 @@ import { FloorDashboard } from "@/components/FloorDashboard";
 
 export const dynamic = "force-dynamic";
 
+type TableLine = Awaited<ReturnType<typeof buildBatchPlan>>["lines"][number] & {
+  nameVi?: string;
+  nameEn?: string;
+};
+
 export default async function HomePage() {
   const locale = await getLocale();
   const dict = locale === "en" ? en : vi;
   const forDate = "2026-11-03";
 
-  let lines: Awaited<ReturnType<typeof buildBatchPlan>>["lines"] = [];
+  let tableLines: TableLine[] = [];
   let ovenLoad = 0;
   let ovenCapacity = 29;
   let canRelease = false;
-  let flags: string[] = [];
+  let hasOvenOver = false;
   let planId: string | null = null;
   let planStatus: string | null = null;
   let latestAudit: string | null = null;
+  let dbError = false;
 
   try {
     const input = await loadPlanInput(forDate);
     const computed = buildBatchPlan(input);
-    lines = computed.lines;
+    let lines = computed.lines;
     ovenLoad = computed.ovenLoad;
     ovenCapacity = computed.ovenCapacity;
     canRelease = computed.canRelease;
-    flags = computed.flags;
+    let flags = computed.flags;
 
     const skus = await prisma.sku.findMany();
     const skuMap = new Map(skus.map((s) => [s.id, s]));
@@ -68,28 +74,17 @@ export default async function HomePage() {
       latestAudit = `${audit.action} · ${audit.actor} · ${audit.at.toISOString()}`;
     }
 
-    const tableLines = lines.map((l) => ({
+    tableLines = lines.map((l) => ({
       ...l,
       nameVi: skuMap.get(l.skuId)?.nameVi,
       nameEn: skuMap.get(l.skuId)?.nameEn,
     }));
-
-    return (
-      <FloorDashboard
-        dict={dict}
-        locale={locale}
-        forDate={forDate}
-        initialLines={tableLines}
-        ovenLoad={ovenLoad}
-        ovenCapacity={ovenCapacity}
-        canRelease={canRelease}
-        hasOvenOver={flags.includes("OVEN_OVER") || ovenLoad > ovenCapacity}
-        planId={planId}
-        planStatus={planStatus}
-        latestAudit={latestAudit}
-      />
-    );
+    hasOvenOver = flags.includes("OVEN_OVER") || ovenLoad > ovenCapacity;
   } catch {
+    dbError = true;
+  }
+
+  if (dbError) {
     return (
       <p className="text-clay">
         {locale === "vi"
@@ -98,4 +93,20 @@ export default async function HomePage() {
       </p>
     );
   }
+
+  return (
+    <FloorDashboard
+      dict={dict}
+      locale={locale}
+      forDate={forDate}
+      initialLines={tableLines}
+      ovenLoad={ovenLoad}
+      ovenCapacity={ovenCapacity}
+      canRelease={canRelease}
+      hasOvenOver={hasOvenOver}
+      planId={planId}
+      planStatus={planStatus}
+      latestAudit={latestAudit}
+    />
+  );
 }

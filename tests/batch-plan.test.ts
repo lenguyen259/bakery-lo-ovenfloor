@@ -222,9 +222,9 @@ describe("buildBatchPlan", () => {
     assert.ok(sd.flags.includes("STALE_DEMAND"));
   });
 
-  it("blocks release at oven load 32/29", () => {
+  it("blocks release at oven load 30/29", () => {
     const plan = buildBatchPlan(baseInput());
-    assert.equal(plan.ovenLoad, 32);
+    assert.equal(plan.ovenLoad, 30);
     assert.equal(plan.ovenCapacity, 29);
     assert.equal(plan.canRelease, false);
     assert.ok(plan.flags.includes("OVEN_OVER"));
@@ -235,7 +235,7 @@ describe("buildBatchPlan", () => {
   it("allows release after ginger cut to 0", () => {
     const plan = buildBatchPlan(baseInput());
     const adjusted = applyOvenSuggestion(plan, PLAN_DATE_SKUS, "GN-QUE", 0);
-    assert.equal(adjusted.ovenLoad, 29);
+    assert.equal(adjusted.ovenLoad, 27);
     assert.equal(adjusted.canRelease, true);
     assert.equal(adjusted.flags.includes("OVEN_OVER"), false);
   });
