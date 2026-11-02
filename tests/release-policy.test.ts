@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { BatchPlanResult } from "../src/server/batch-plan.ts";
+import type { BatchPlanResult } from "../src/server/batch-plan";
 import {
   assertCanRelease,
   canRoleEditPlan,
   canRoleRelease,
   detectOverrideQuestion,
-} from "../src/server/release-policy.ts";
+} from "../src/server/release-policy";
 
 const releasablePlan: BatchPlanResult = {
   lines: [],

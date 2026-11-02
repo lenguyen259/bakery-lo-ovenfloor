@@ -5,7 +5,7 @@ import {
   buildBatchPlan,
   type BatchPlanInput,
   type SkuPlanInput,
-} from "../src/server/batch-plan.ts";
+} from "../src/server/batch-plan";
 
 const PLAN_DATE_SKUS: SkuPlanInput[] = [
   {
