@@ -5,10 +5,26 @@ export const dynamic = "force-dynamic";
 
 export default async function ProcessPage() {
   const locale = await getLocale();
-  const steps = await prisma.processStep.findMany({
-    orderBy: [{ stream: "asc" }, { sortOrder: "asc" }],
-    include: { requirements: true },
-  });
+  let steps: Awaited<
+    ReturnType<
+      typeof prisma.processStep.findMany<{ include: { requirements: true } }>
+    >
+  > = [];
+
+  try {
+    steps = await prisma.processStep.findMany({
+      orderBy: [{ stream: "asc" }, { sortOrder: "asc" }],
+      include: { requirements: true },
+    });
+  } catch {
+    return (
+      <p className="text-clay">
+        {locale === "vi"
+          ? "Không kết nối được cơ sở dữ liệu. Chạy migrate và seed."
+          : "Database unavailable. Run migrate and seed."}
+      </p>
+    );
+  }
 
   const mfg = steps.filter((s) => s.stream === "manufacturing");
   const ops = steps.filter((s) => s.stream === "operations");

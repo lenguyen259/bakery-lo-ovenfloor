@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { generateObject } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
+import { createLlmProvider, getAiModelId } from "@/lib/ai/provider";
 import { prisma } from "@/lib/db";
 import {
   agentOutputSchema,
@@ -116,12 +116,9 @@ export async function POST(request: Request) {
     mode = "demo";
   } else {
     try {
-      const openai = createOpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-        baseURL: process.env.OPENAI_BASE_URL,
-      });
+      const llm = createLlmProvider();
       const result = await generateObject({
-        model: openai(process.env.AI_MODEL ?? "gpt-4o-mini"),
+        model: llm(getAiModelId()),
         schema: agentOutputSchema,
         system: `Explain the batch plan only. Every integer in your answer must already appear in the input JSON. Do not propose new planned quantities except mentioning GN-QUE → 0 when OVEN_OVER is present.`,
         prompt: JSON.stringify({ plan: planJson, question }),
