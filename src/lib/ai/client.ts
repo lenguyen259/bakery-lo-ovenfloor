@@ -9,7 +9,7 @@ export const agentOutputSchema = z.object({
 
 export type AgentOutput = z.infer<typeof agentOutputSchema>;
 
-export type AiMode = "demo" | "live" | "fallback";
+export type AiMode = "demo" | "live" | "fallback" | "deterministic";
 
 export function resolveAiMode(): {
   mode: AiMode;

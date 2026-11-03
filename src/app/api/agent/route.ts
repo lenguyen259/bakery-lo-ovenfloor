@@ -12,6 +12,11 @@ import { jsonError, jsonOk } from "@/lib/api-response";
 import { loadPlanInput } from "@/server/plan-input";
 import { buildBatchPlan } from "@/server/batch-plan";
 import { detectOverrideQuestion } from "@/server/release-policy";
+import {
+  buildAgentPlanContext,
+  tryAnswerDeterministicPlanQuestion,
+  validateAgentSkuConsistency,
+} from "@/server/agent-plan-lookup";
 
 export const dynamic = "force-dynamic";
 
@@ -79,14 +84,15 @@ export async function POST(request: Request) {
   const forDate = "2026-11-03";
   const input = await loadPlanInput(forDate);
   const computed = buildBatchPlan(input);
-  const planJson = {
-    forDate,
-    lines: computed.lines,
-    ovenLoad: computed.ovenLoad,
-    ovenCapacity: computed.ovenCapacity,
-    flags: computed.flags,
-    humanSuggestion: computed.humanSuggestion,
-  };
+  const skuRows = await prisma.sku.findMany({
+    where: { active: true },
+    select: { id: true, nameEn: true, nameVi: true },
+  });
+  const skuNames = new Map(
+    skuRows.map((s) => [s.id, { nameEn: s.nameEn, nameVi: s.nameVi }]),
+  );
+  const planJson = buildAgentPlanContext(forDate, computed, skuNames);
+  const agentLines = planJson.lines;
 
   const ai = resolveAiMode();
 
@@ -105,6 +111,30 @@ export async function POST(request: Request) {
     return jsonOk({ output: OVERRIDE_REFUSAL, mode: ai.mode, bannerVi: ai.bannerVi });
   }
 
+  const deterministicAnswer = tryAnswerDeterministicPlanQuestion(
+    question,
+    planJson,
+  );
+  if (deterministicAnswer) {
+    await prisma.agentRun.create({
+      data: {
+        id: `agent-${Date.now()}`,
+        kind: "floor_question",
+        mode: "deterministic",
+        question,
+        inputJson: planJson,
+        outputJson: deterministicAnswer,
+        failureFlags: [],
+      },
+    });
+    return jsonOk({
+      output: deterministicAnswer,
+      mode: "deterministic",
+      failureFlags: [],
+      bannerVi: "Trả lời từ dữ liệu kế hoạch (không gọi mô hình)",
+    });
+  }
+
   let output = pickFixture(question);
   let mode = ai.mode;
   let failureFlags: string[] = [];
@@ -120,7 +150,7 @@ export async function POST(request: Request) {
       const result = await generateObject({
         model: llm(getAiModelId()),
         schema: agentOutputSchema,
-        system: `Explain the batch plan only. Every integer in your answer must already appear in the input JSON. Do not propose new planned quantities except mentioning GN-QUE → 0 when OVEN_OVER is present.`,
+        system: `Explain the batch plan only. Use plan.lines: each row has skuId, nameEn, nameVi, plannedQty, slots, and flags. Never swap SKUs or product names. Every integer in your answer must already appear in the input JSON. Do not propose new planned quantities except mentioning GN-QUE → 0 when OVEN_OVER is present. cited_sku_ids must match the SKUs you describe.`,
         prompt: JSON.stringify({ plan: planJson, question }),
       });
       const allowed = allowedNumbersFromPlan(computed);
@@ -129,6 +159,16 @@ export async function POST(request: Request) {
         failureFlags = ["MODEL_NUMBER_DRIFT"];
         output = pickFixture(question);
         mode = "fallback";
+      } else if (
+        !validateAgentSkuConsistency(result.object, question, planJson)
+      ) {
+        failureFlags = ["MODEL_SKU_MISMATCH"];
+        const fallbackDeterministic = tryAnswerDeterministicPlanQuestion(
+          question,
+          planJson,
+        );
+        output = fallbackDeterministic ?? pickFixture(question);
+        mode = fallbackDeterministic ? "deterministic" : "fallback";
       } else {
         output = result.object;
         mode = "live";
@@ -157,10 +197,12 @@ export async function POST(request: Request) {
     mode,
     failureFlags,
     bannerVi:
-      mode === "demo"
-        ? "Chế độ minh hoạ — chưa gọi mô hình"
-        : mode === "fallback"
-          ? "Mô hình lỗi — dùng bản minh hoạ"
-          : "Đang dùng mô hình thật",
+      mode === "deterministic"
+        ? "Trả lời từ dữ liệu kế hoạch (không gọi mô hình)"
+        : mode === "demo"
+          ? "Chế độ minh hoạ — chưa gọi mô hình"
+          : mode === "fallback"
+            ? "Mô hình lỗi — dùng bản minh hoạ"
+            : "Đang dùng mô hình thật",
   });
 }
