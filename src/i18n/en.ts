@@ -24,7 +24,7 @@ export const en: Dictionary = {
     locale: "Language",
   },
   disclaimer:
-    "Portfolio demonstration for the Sharon JSC AI Implementation Specialist role. Not an official Sharon system, product, or brand. Data is fictional for a demo bakery kitchen in Ho Chi Minh City.",
+    "Portfolio demo for an anonymous bakery / F&B operations programme — not a live production system. Data is fictional for a demo kitchen in Ho Chi Minh City.",
   roles: {
     supervisor: "Lan — supervisor",
     planner: "Minh — planner",

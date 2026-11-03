@@ -1,6 +1,6 @@
 # SPEC — Lò Ovenfloor
 
-Portfolio demonstration for the Sharon JSC AI Implementation Specialist role. Not an official Sharon system.
+Portfolio demonstration for a fictional HCMC bakery operations programme. Not a live production system.
 
 Product name on screen: **Lò**. Kicker: `OVENFLOOR · PORTFOLIO`.
 
@@ -417,7 +417,7 @@ Agent behavior:
 - Locale toggle switches the headline and the process-step names.
 - `npm test`, `npm run typecheck`, `npm run lint`, and `npm run build` pass.
 - Tests cover croissant 108, pandan 16, ginger 18 with `LOW_HISTORY`, stale exclusion, oven block, sponsor release denial, and override refusal.
-- Footer disclaimer is present. The page does not claim to be a live Sharon factory system.
+- Footer disclaimer is present. The page does not claim to be a live production bakery system.
 
 ## Environment
 
@@ -458,7 +458,7 @@ README sections: disclaimer EN, disclaimer VI (use the sentence below), JD bulle
 
 Vietnamese disclaimer, verbatim:
 
-> Đây là bản minh hoạ portfolio cho vị trí AI Implementation Specialist tại Sharon JSC. Không phải hệ thống, sản phẩm hay thương hiệu vận hành chính thức của Sharon. Dữ liệu là dữ liệu giả lập cho một bếp bánh demo tại TP.HCM.
+> Bản minh hoạ portfolio cho chương trình bánh và F&B giả lập — không phải hệ thống sản xuất thật. Dữ liệu là giả lập cho bếp demo tại TP.HCM.
 
 JD bullets to list in the README: map manufacturing and operations processes; ship a floor agent from a computed plan through human release; structured SQL; POS-sourced demand; honest model limits; Vietnamese and English; tablet use on the floor.
 

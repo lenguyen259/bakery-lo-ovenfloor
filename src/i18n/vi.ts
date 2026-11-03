@@ -22,7 +22,7 @@ export const vi = {
     locale: "Ngôn ngữ",
   },
   disclaimer:
-    "Đây là bản minh hoạ portfolio cho vị trí AI Implementation Specialist tại Sharon JSC. Không phải hệ thống, sản phẩm hay thương hiệu vận hành chính thức của Sharon. Dữ liệu là dữ liệu giả lập cho một bếp bánh demo tại TP.HCM.",
+    "Bản minh hoạ portfolio cho chương trình bánh và F&B giả lập — không phải hệ thống sản xuất thật. Dữ liệu là giả lập cho bếp demo tại TP.HCM.",
   roles: {
     supervisor: "Lan — tổ trưởng",
     planner: "Minh — kế hoạch",
